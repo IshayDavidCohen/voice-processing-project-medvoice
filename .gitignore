@@ -27,3 +27,4 @@ frontend/dist/
 *.swp
 
 *.md
+!README.md
