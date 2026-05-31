@@ -42,7 +42,7 @@ medvoice/
 
 ## Prerequisites
 
-- **Python 3.11+**
+- **Python 3.10+ (3.12 recommended)**
 - **Node.js 18+**
 - **FFmpeg** on your PATH (required by pydub for audio conversion)
 
@@ -61,6 +61,24 @@ source venv/bin/activate
 
 pip install -r requirements.txt
 ```
+
+FFmpeg is required for audio processing (pydub). It is a system-level dependency, not a Python package:
+
+```bash
+# Conda (recommended)
+conda install ffmpeg -y
+
+# macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt install ffmpeg
+
+# Windows (Chocolatey)
+choco install ffmpeg
+```
+
+Verify with `ffmpeg -version`.
 
 Create a `.env` file in the project root (optional):
 
@@ -85,7 +103,11 @@ python -m backend.seed_lexicon
 uvicorn backend.main:app --reload --port 8000
 ```
 
-The first startup downloads the Whisper model (~1.5 GB for `medium`). Subsequent starts load from cache.
+**Note:** The first startup downloads the Whisper model from Hugging Face (~1.5 GB for `medium`). This is a one-time download that may take several minutes. The model is cached locally — subsequent starts are near-instant. You can pre-download the model:
+
+```bash
+python -c "from faster_whisper import WhisperModel; WhisperModel('medium', compute_type='int8')"
+```
 
 API docs are available at http://localhost:8000/docs
 
