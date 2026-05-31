@@ -1,8 +1,15 @@
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, useLocation } from "react-router-dom";
 import RecordPage from "./pages/RecordPage";
 import ResultPage from "./pages/ResultPage";
+import ArchitecturePage from "./pages/ArchitecturePage";
 
 export default function App() {
+  const location = useLocation();
+
+  if (location.pathname === "/architecture") {
+    return <ArchitecturePage />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
       <header className="bg-white/80 backdrop-blur-sm border-b border-blue-100 sticky top-0 z-50">

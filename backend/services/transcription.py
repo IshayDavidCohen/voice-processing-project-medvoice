@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from backend.config import settings
 logger = logging.getLogger(__name__)
 
 _model: WhisperModel | None = None
+_HEBREW_RE = re.compile(r"[\u0590-\u05FF]")
 
 
 @dataclass
@@ -20,6 +22,14 @@ class Segment:
     text: str
     language: str | None = None
     confidence: float | None = None
+
+
+def _detect_segment_language(text: str) -> str:
+    hebrew_chars = len(_HEBREW_RE.findall(text))
+    alpha_chars = sum(1 for c in text if c.isalpha())
+    if alpha_chars == 0:
+        return "en"
+    return "he" if hebrew_chars / alpha_chars > 0.3 else "en"
 
 
 def load_model() -> WhisperModel:
@@ -56,14 +66,22 @@ def transcribe(audio_path: Path) -> tuple[list[Segment], str | None]:
     )
 
     detected_lang = getattr(info, "language", None)
+    lang_prob = getattr(info, "language_probability", None)
+    logger.info(
+        "Whisper detected language='%s' probability=%.3f",
+        detected_lang,
+        lang_prob or 0.0,
+    )
+
     results: list[Segment] = []
     for seg in segments_gen:
+        text = seg.text.strip()
         results.append(
             Segment(
                 start=seg.start,
                 end=seg.end,
-                text=seg.text.strip(),
-                language=detected_lang,
+                text=text,
+                language=_detect_segment_language(text),
                 confidence=seg.avg_logprob if hasattr(seg, "avg_logprob") else None,
             )
         )
