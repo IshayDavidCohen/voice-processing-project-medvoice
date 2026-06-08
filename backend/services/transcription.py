@@ -55,7 +55,7 @@ def get_model() -> WhisperModel:
     return _model
 
 
-def transcribe(audio_path: Path) -> tuple[list[Segment], str | None]:
+def transcribe(audio_path: Path, job_id: str | None = None) -> tuple[list[Segment], str | None]:
     model = get_model()
     segments_gen, info = model.transcribe(
         str(audio_path),
@@ -67,11 +67,6 @@ def transcribe(audio_path: Path) -> tuple[list[Segment], str | None]:
 
     detected_lang = getattr(info, "language", None)
     lang_prob = getattr(info, "language_probability", None)
-    logger.info(
-        "Whisper detected language='%s' probability=%.3f",
-        detected_lang,
-        lang_prob or 0.0,
-    )
 
     results: list[Segment] = []
     for seg in segments_gen:
@@ -85,4 +80,22 @@ def transcribe(audio_path: Path) -> tuple[list[Segment], str | None]:
                 confidence=seg.avg_logprob if hasattr(seg, "avg_logprob") else None,
             )
         )
+
+    for i, s in enumerate(results):
+        logger.info(
+            "[%d] %.1fs - %.1fs | lang=%s | \"%s\"",
+            i, s.start, s.end, s.language, s.text,
+        )
+    logger.info(
+        "Overall: language='%s' probability=%.3f, %d segments",
+        detected_lang, lang_prob or 0.0, len(results),
+    )
+
+    if job_id:
+        log_path = settings.upload_dir / f"{job_id}_segments.txt"
+        with open(log_path, "w", encoding="utf-8") as f:
+            for i, s in enumerate(results):
+                f.write(f'[{i}] {s.start:.1f}s - {s.end:.1f}s | lang={s.language} | "{s.text}"\n')
+            f.write(f"\nOverall: language='{detected_lang}' probability={lang_prob or 0.0:.3f}\n")
+
     return results, detected_lang

@@ -38,7 +38,7 @@ def _run_pipeline(job_id: str, audio_path: Path) -> None:
         db.commit()
 
         processed_path = audio_processing.convert_to_whisper_format(audio_path)
-        segments, detected_lang = transcription.transcribe(processed_path)
+        segments, detected_lang = transcription.transcribe(processed_path, job_id=job_id)
 
         for i, seg in enumerate(segments):
             db.add(TranscriptSegment(
